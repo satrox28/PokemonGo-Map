@@ -9,6 +9,7 @@ var $selectStyle
 var $selectIconResolution
 var $selectIconSize
 var $selectLuredPokestopsOnly
+var $selectOpenGymsOnly
 var $selectSearchIconMarker
 var $selectLocationIconMarker
 
@@ -737,6 +738,10 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
+  'showOpenGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean
@@ -1053,6 +1058,8 @@ function updateSearchStatus () {
 
 function initSidebar () {
   $('#gyms-switch').prop('checked', Store.get('showGyms'))
+  $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
+  $('#open-gyms-only-wrapper').toggle(Store.get('showGyms'))
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
@@ -2149,6 +2156,18 @@ $(function () {
     updateMap()
   })
 
+  $selectOpenGymsOnly = $('#open-gyms-only-switch')
+
+  $selectOpenGymsOnly.select2({
+    placeholder: 'Only Show Open Pokestops',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectOpenGymsOnly.on('change', function () {
+    Store.set('showOpenGymsOnly', this.value)
+    updateMap()
+  })
+
   $selectSearchIconMarker = $('#iconmarker-style')
   $selectLocationIconMarker = $('#locationmarker-style')
 
@@ -2355,6 +2374,20 @@ $(function () {
     }
     return buildSwitchChangeListener(mapData, ['pokestops'], 'showPokestops').bind(this)()
   })
+
+    $('#gyms-switch').change(function () {
+    var options = {
+      'duration': 500
+    }
+    var wrapper = $('#open-gyms-only-wrapper')
+    if (this.checked) {
+      wrapper.show(options)
+    } else {
+      wrapper.hide(options)
+    }
+    return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
+  })
+
 
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
