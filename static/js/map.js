@@ -738,10 +738,6 @@ var StoreOptions = {
     default: false,
     type: StoreTypes.Boolean
   },
-  'showOpenGymsOnly': {
-    default: 0,
-    type: StoreTypes.Number
-  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean
@@ -1058,8 +1054,6 @@ function updateSearchStatus () {
 
 function initSidebar () {
   $('#gyms-switch').prop('checked', Store.get('showGyms'))
-  $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
-  $('#open-gyms-only-wrapper').toggle(Store.get('showGyms'))
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
@@ -1199,7 +1193,11 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymLevel = getGymLevel(gymPoints)
+    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+    var gymLevel = 1
+    while (gymPoints >= gymPrestige[gymLevel - 1]) {
+      gymLevel++
+    }
     str = `
       <div>
         <center>
@@ -1752,7 +1750,8 @@ function processPokemons (i, item) {
       item.marker.setMap(null)
     }
     if (!item.hidden) {
-      item.marker = setupPokemonMarker(item)
+      item.marker = setupPokemonMarker(item, map)
+      customizePokemonMarker(item.marker, item)
       mapData.pokemons[item['encounter_id']] = item
     }
   }
@@ -1800,19 +1799,6 @@ function processPokestops (i, item) {
 function processGyms (i, item) {
   if (!Store.get('showGyms')) {
     return false // in case the checkbox was unchecked in the meantime.
-  }
-  if (Store.get('showOpenGymsOnly')) {
-    var gymLevel = getGymLevel(item.gym_points)
-    if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
-      if (mapData.gyms[item['gym_id']] && mapData.gyms[item['gym_id']].marker) {
-        if (mapData.gyms[item['gym_id']].marker.rangeCircle) {
-          mapData.gyms[item['gym_id']].marker.rangeCircle.setMap(null)
-        }
-        mapData.gyms[item['gym_id']].marker.setMap(null)
-        delete mapData.gyms[item['gym_id']]
-      }
-      return true
-    }
   }
 
   if (item['gym_id'] in mapData.gyms) {
@@ -1909,7 +1895,8 @@ function redrawPokemon (pokemonList) {
     var item = pokemonList[key]
     if (!item.hidden) {
       if (item.marker.rangeCircle) item.marker.rangeCircle.setMap(null)
-      var newMarker = setupPokemonMarker(item, skipNotification, this.marker.animationDisabled)
+      var newMarker = setupPokemonMarker(item, map, this.marker.animationDisabled)
+      customizePokemonMarker(newMarker, item, skipNotification)
       item.marker.setMap(null)
       pokemonList[key].marker = newMarker
     }
@@ -2082,11 +2069,6 @@ function i8ln (word) {
     // Word doesn't exist in dictionary return it as is
     return word
   }
-}
-
-function isTouchDevice () {
-  // Should cover most browsers
-  return 'ontouchstart' in window || navigator.maxTouchPoints
 }
 
 //
