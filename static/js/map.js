@@ -1146,6 +1146,16 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   return contentstring
 }
 
+var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+
+function getGymLevel (gymPoints) {
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
+  return gymLevel
+}
+
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
   var memberStr = ''
   for (var i = 0; i < members.length; i++) {
@@ -1189,11 +1199,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
+    var gymLevel = getGymLevel(gymPoints)
     str = `
       <div>
         <center>
@@ -1794,6 +1800,19 @@ function processPokestops (i, item) {
 function processGyms (i, item) {
   if (!Store.get('showGyms')) {
     return false // in case the checkbox was unchecked in the meantime.
+  }
+  if (Store.get('showOpenGymsOnly')) {
+    var gymLevel = getGymLevel(item.gym_points)
+    if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
+      if (mapData.gyms[item['gym_id']] && mapData.gyms[item['gym_id']].marker) {
+        if (mapData.gyms[item['gym_id']].marker.rangeCircle) {
+          mapData.gyms[item['gym_id']].marker.rangeCircle.setMap(null)
+        }
+        mapData.gyms[item['gym_id']].marker.setMap(null)
+        delete mapData.gyms[item['gym_id']]
+      }
+      return true
+    }
   }
 
   if (item['gym_id'] in mapData.gyms) {
