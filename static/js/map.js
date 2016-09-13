@@ -10,6 +10,7 @@ var $selectIconResolution
 var $selectIconSize
 var $selectOpenGymsOnly
 var $selectTeamGymsOnly
+var $selectLastUpdateGymsOnly
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
 var $selectLocationIconMarker
@@ -982,6 +983,14 @@ function processGyms (i, item) {
     return true
   }
 
+  if (Store.get('showLastUpdatedGymsOnly')) {
+    var now = new Date()
+    if ((Store.get('showLastUpdatedGymsOnly') * 3600 * 1000) + item.last_scanned < now.getTime()) {
+      removeGymFromMap(item['gym_id'])
+      return true
+    }
+  }
+
   if (item['gym_id'] in mapData.gyms) {
     item.marker = updateGymMarker(item, mapData.gyms[item['gym_id']].marker)
   } else { // add marker to map and item to dict
@@ -1404,6 +1413,18 @@ $(function () {
 
   $selectTeamGymsOnly.on('change', function () {
     Store.set('showTeamGymsOnly', this.value)
+    updateMap()
+  })
+
+  $selectLastUpdateGymsOnly = $('#last-update-gyms-switch')
+
+  $selectLastUpdateGymsOnly.select2({
+    placeholder: 'Only Show Gyms Last Updated',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectLastUpdateGymsOnly.on('change', function () {
+    Store.set('showLastUpdatedGymsOnly', this.value)
     updateMap()
   })
 

@@ -700,6 +700,10 @@ var StoreOptions = {
     default: 0,
     type: StoreTypes.Number
   },
+  'showLastUpdatedGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean

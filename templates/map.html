@@ -81,6 +81,15 @@
                   <option value="3">Instinct</option>
                 </select>
               </div>
+              <div class="form-control switch-container" id="last-update-gyms-wrapper">
+                <select name="last-update-gyms-switch" id="last-update-gyms-switch">
+                  <option value="0">All</option>
+                  <option value="1">Last Hour</option>
+                  <option value="6">Last 6 Hours</option>
+                  <option value="24">Last 24 Hours</option>
+                  <option value="168">Last Week</option>
+                </select>
+              </div>
             </div>
             <div class="form-control switch-container">
               <h3>Pokéstops</h3>
@@ -306,7 +315,7 @@
       var centerLng = {{lng}};
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
-    <script src="{{ url_for('static', filename='dist/js/map.built.js').lstrip('/') }}"></script>
+    <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
   </body>
