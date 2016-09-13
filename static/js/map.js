@@ -8,6 +8,7 @@ var $selectRarityNotify
 var $selectStyle
 var $selectIconResolution
 var $selectIconSize
+var $selectOpenGymsOnly
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
 var $selectLocationIconMarker
@@ -257,6 +258,8 @@ function updateSearchStatus () {
 
 function initSidebar () {
   $('#gyms-switch').prop('checked', Store.get('showGyms'))
+  $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
+  $('#open-gyms-only-wrapper').toggle(Store.get('showGyms'))
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
@@ -386,11 +389,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
+    var gymLevel = getGymLevel(gymPoints)
     str = `
       <div>
         <center>
@@ -957,6 +956,19 @@ function processGyms (i, item) {
   if (!Store.get('showGyms')) {
     return false // in case the checkbox was unchecked in the meantime.
   }
+  if (Store.get('showOpenGymsOnly')) {
+    var gymLevel = getGymLevel(item.gym_points)
+    if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
+      if (mapData.gyms[item['gym_id']] && mapData.gyms[item['gym_id']].marker) {
+        if (mapData.gyms[item['gym_id']].marker.rangeCircle) {
+          mapData.gyms[item['gym_id']].marker.rangeCircle.setMap(null)
+        }
+        mapData.gyms[item['gym_id']].marker.setMap(null)
+        delete mapData.gyms[item['gym_id']]
+      }
+      return true
+    }
+  }
 
   if (item['gym_id'] in mapData.gyms) {
     item.marker = updateGymMarker(item, mapData.gyms[item['gym_id']].marker)
@@ -1359,6 +1371,18 @@ $(function () {
     redrawPokemon(mapData.lurePokemons)
   })
 
+  $selectOpenGymsOnly = $('#open-gyms-only-switch')
+
+  $selectOpenGymsOnly.select2({
+    placeholder: 'Only Show Open Gyms',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectOpenGymsOnly.on('change', function () {
+    Store.set('showOpenGymsOnly', this.value)
+    updateMap()
+  })
+
   $selectLuredPokestopsOnly = $('#lured-pokestops-only-switch')
 
   $selectLuredPokestopsOnly.select2({
@@ -1536,7 +1560,19 @@ $(function () {
   }
 
   // Setup UI element interactions
-  $('#gyms-switch').change(buildSwitchChangeListener(mapData, ['gyms'], 'showGyms'))
+  $('#gyms-switch').change(function () {
+    var options = {
+      'duration': 500
+    }
+    var wrapper = $('#open-gyms-only-wrapper')
+    if (this.checked) {
+      wrapper.show(options)
+    } else {
+      wrapper.hide(options)
+    }
+    return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms')
+  })
+
   $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon'))
   $('#scanned-switch').change(buildSwitchChangeListener(mapData, ['scanned'], 'showScanned'))
   $('#spawnpoints-switch').change(buildSwitchChangeListener(mapData, ['spawnpoints'], 'showSpawnpoints'))
