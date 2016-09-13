@@ -696,6 +696,10 @@ var StoreOptions = {
     default: 0,
     type: StoreTypes.Number
   },
+  'showTeamGymsOnly': {
+    default: 0,
+    type: StoreTypes.Number
+  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean

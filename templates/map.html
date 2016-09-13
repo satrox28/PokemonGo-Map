@@ -66,18 +66,22 @@
                 </label>
               </div>
             </div>
-            <div class="form-control switch-container" id="open-gyms-only-wrapper" style="display:none">
-              <select name="open-gyms-only-switch" id="open-gyms-only-switch">
-                <option value="0">All</option>
-<<<<<<< fc0ba92a015a156aacb174891178d17cce9d39b0
-                <option value="1">Only Open</option>
-              </select>
+            <div id="gyms-filter-wrapper" style="display:none">
+              <div class="form-control switch-container" id="open-gyms-only-wrapper">
+                <select name="open-gyms-only-switch" id="open-gyms-only-switch">
+                  <option value="0">All</option>
+                  <option value="1">Open Spot</option>
+                </select>
               </div>
-=======
-                <option value="1">Open Spot</option>
-              </select>
+              <div class="form-control switch-container" id="team-gyms-only-wrapper">
+                <select name="team-gyms-filter-switch" id="team-gyms-only-switch">
+                  <option value="0">All</option>
+                  <option value="1">Mystic</option>
+                  <option value="2">Valor</option>
+                  <option value="3">Instinct</option>
+                </select>
+              </div>
             </div>
->>>>>>> Filter on Gyms with Open Spots
             <div class="form-control switch-container">
               <h3>Pokéstops</h3>
               <div class="onoffswitch">
@@ -302,7 +306,7 @@
       var centerLng = {{lng}};
     </script>
     <script src="{{ url_for('static', filename='dist/js/map.common.min.js').lstrip('/') }}"></script>
-    <script src="{{ url_for('static', filename='dist/js/map.min.js').lstrip('/') }}"></script>
+    <script src="{{ url_for('static', filename='dist/js/map.built.js').lstrip('/') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/stats.min.js').lstrip('/') }}"></script>
     <script defer src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&amp;callback=initMap&amp;libraries=places,geometry"></script>
   </body>
