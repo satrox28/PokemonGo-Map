@@ -11,6 +11,8 @@ var $selectIconSize
 var $selectOpenGymsOnly
 var $selectTeamGymsOnly
 var $selectLastUpdateGymsOnly
+var $selectMinGymLevel
+var $selectMaxGymLevel
 var $selectLuredPokestopsOnly
 var $selectSearchIconMarker
 var $selectLocationIconMarker
@@ -263,6 +265,8 @@ function initSidebar () {
   $('#open-gyms-only-switch').val(Store.get('showOpenGymsOnly'))
   $('#gyms-filter-wrapper').toggle(Store.get('showGyms'))
   $('#team-gyms-only-switch').val(Store.get('showTeamGymsOnly'))
+  $('#min-level-gyms-filter-switch').val(Store.get('minGymLevel'))
+  $('#max-level-gyms-filter-switch').val(Store.get('maxGymLevel'))
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'))
   $('#pokestops-switch').prop('checked', Store.get('showPokestops'))
   $('#lured-pokestops-only-switch').val(Store.get('showLuredPokestopsOnly'))
@@ -960,6 +964,7 @@ function processGyms (i, item) {
     return false // in case the checkbox was unchecked in the meantime.
   }
 
+  var gymLevel = getGymLevel(item.gym_points)
   var removeGymFromMap = function (gymid) {
     if (mapData.gyms[gymid] && mapData.gyms[gymid].marker) {
       if (mapData.gyms[gymid].marker.rangeCircle) {
@@ -971,7 +976,6 @@ function processGyms (i, item) {
   }
 
   if (Store.get('showOpenGymsOnly')) {
-    var gymLevel = getGymLevel(item.gym_points)
     if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
       removeGymFromMap(item['gym_id'])
       return true
@@ -989,6 +993,16 @@ function processGyms (i, item) {
       removeGymFromMap(item['gym_id'])
       return true
     }
+  }
+
+  if (gymLevel < Store.get('minGymLevel')) {
+    removeGymFromMap(item['gym_id'])
+    return true
+  }
+
+  if (gymLevel > Store.get('maxGymLevel')) {
+    removeGymFromMap(item['gym_id'])
+    return true
   }
 
   if (item['gym_id'] in mapData.gyms) {
@@ -1425,6 +1439,30 @@ $(function () {
 
   $selectLastUpdateGymsOnly.on('change', function () {
     Store.set('showLastUpdatedGymsOnly', this.value)
+    updateMap()
+  })
+
+  $selectMinGymLevel = $('#min-level-gyms-filter-switch')
+
+  $selectMinGymLevel.select2({
+    placeholder: 'Minimum Gym Level',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectMinGymLevel.on('change', function () {
+    Store.set('minGymLevel', this.value)
+    updateMap()
+  })
+
+  $selectMaxGymLevel = $('#max-level-gyms-filter-switch')
+
+  $selectMaxGymLevel.select2({
+    placeholder: 'Maximum Gym Level',
+    maximumResultsForSearch: Infinity
+  })
+
+  $selectMaxGymLevel.on('change', function () {
+    Store.set('maxGymLevel', this.value)
     updateMap()
   })
 

@@ -704,6 +704,14 @@ var StoreOptions = {
     default: 0,
     type: StoreTypes.Number
   },
+  'minGymLevel': {
+    default: 0,
+    type: StoreTypes.Number
+  },
+  'maxGymLevel': {
+    default: 0,
+    type: StoreTypes.Number
+  },
   'showPokemon': {
     default: true,
     type: StoreTypes.Boolean
