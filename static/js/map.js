@@ -975,8 +975,27 @@ function processGyms (i, item) {
     }
   }
 
-  if (Store.get('showOpenGymsOnly')) {
+  if (Store.get('showOpenGymsOnly') === 1) {
     if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
+      removeGymFromMap(item['gym_id'])
+      return true
+    }
+  }
+  if (Store.get('showOpenGymsOnly') > 1 && gymLevel < 10 && gymLevel >= item.pokemon.length) {
+    var closePrestige = 0
+    switch (Store.get('showOpenGymsOnly')) {
+      case 2:
+        closePrestige = 1000
+        break
+      case 3:
+        closePrestige = 2500
+        break
+      case 4:
+        closePrestige = 5000
+        break
+    }
+
+    if (gymPrestige[gymLevel - 1] > closePrestige + item.gym_points) {
       removeGymFromMap(item['gym_id'])
       return true
     }
