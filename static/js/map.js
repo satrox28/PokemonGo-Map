@@ -1672,7 +1672,7 @@ $(function () {
     } else {
       wrapper.hide(options)
     }
-    return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms')
+    return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
   })
 
   $('#pokemon-switch').change(buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon'))
