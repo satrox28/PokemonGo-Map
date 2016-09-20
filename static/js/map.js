@@ -1012,7 +1012,7 @@ function processGyms (i, item) {
       return true
     }
   }
-  if (Store.get('showOpenGymsOnly') > 1 && gymLevel < 10 && gymLevel >= item.pokemon.length) {
+  if (Store.get('showOpenGymsOnly') > 1) {
     var closePrestige = 0
     switch (Store.get('showOpenGymsOnly')) {
       case 2:
@@ -1026,7 +1026,7 @@ function processGyms (i, item) {
         break
     }
 
-    if (gymPrestige[gymLevel - 1] > closePrestige + item.gym_points) {
+    if (gymPrestige[gymLevel - 1] > closePrestige + item.gym_points || gymLevel === 10) {
       removeGymFromMap(item['gym_id'])
       return true
     }
@@ -1736,7 +1736,7 @@ $(function () {
     return buildSwitchChangeListener(mapData, ['pokestops'], 'showPokestops').bind(this)()
   })
 
-    $('#gyms-switch').change(function () {
+  $('#gyms-switch').change(function () {
     var options = {
       'duration': 500
     }
@@ -1748,7 +1748,6 @@ $(function () {
     }
     return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
   })
-
 
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
