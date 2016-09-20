@@ -353,6 +353,16 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   return contentstring
 }
 
+var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+
+function getGymLevel (gymPoints) {
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
+  return gymLevel
+}
+
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
   var memberStr = ''
   for (var i = 0; i < members.length; i++) {
@@ -488,6 +498,26 @@ function spawnpointLabel (item) {
       </div>`
   }
   return str
+}
+
+function getGoogleSprite (index, sprite, displayHeight) {
+  displayHeight = Math.max(displayHeight, 3)
+  var scale = displayHeight / sprite.iconHeight
+  // Crop icon just a tiny bit to avoid bleedover from neighbor
+  var scaledIconSize = new google.maps.Size(scale * sprite.iconWidth - 1, scale * sprite.iconHeight - 1)
+  var scaledIconOffset = new google.maps.Point(
+    (index % sprite.columns) * sprite.iconWidth * scale + 0.5,
+    Math.floor(index / sprite.columns) * sprite.iconHeight * scale + 0.5)
+  var scaledSpriteSize = new google.maps.Size(scale * sprite.spriteWidth, scale * sprite.spriteHeight)
+  var scaledIconCenterOffset = new google.maps.Point(scale * sprite.iconWidth / 2, scale * sprite.iconHeight / 2)
+
+  return {
+    url: sprite.filename,
+    size: scaledIconSize,
+    scaledSize: scaledSpriteSize,
+    origin: scaledIconOffset,
+    anchor: scaledIconCenterOffset
+  }
 }
 
 function addRangeCircle (marker, map, type, teamId) {
@@ -1497,6 +1527,18 @@ $(function () {
     updateMap()
   })
 
+  $selectOpenGymsOnly = $('#open-gyms-only-switch')
+
+  $selectOpenGymsOnly.select2({
+    placeholder: 'Only Show Open Pokestops',
+    minimumResultsForSearch: Infinity
+  })
+
+  $selectOpenGymsOnly.on('change', function () {
+    Store.set('showOpenGymsOnly', this.value)
+    updateMap()
+  })
+
   $selectSearchIconMarker = $('#iconmarker-style')
   $selectLocationIconMarker = $('#locationmarker-style')
 
@@ -1692,6 +1734,20 @@ $(function () {
     }
     return buildSwitchChangeListener(mapData, ['pokestops'], 'showPokestops').bind(this)()
   })
+
+    $('#gyms-switch').change(function () {
+    var options = {
+      'duration': 500
+    }
+    var wrapper = $('#open-gyms-only-wrapper')
+    if (this.checked) {
+      wrapper.show(options)
+    } else {
+      wrapper.hide(options)
+    }
+    return buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
+  })
+
 
   $('#sound-switch').change(function () {
     Store.set('playSound', this.checked)
