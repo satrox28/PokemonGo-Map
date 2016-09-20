@@ -709,7 +709,7 @@ var StoreOptions = {
     type: StoreTypes.Number
   },
   'maxGymLevel': {
-    default: 0,
+    default: 10,
     type: StoreTypes.Number
   },
   'showPokemon': {
