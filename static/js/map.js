@@ -37,6 +37,7 @@ var searchMarker
 var storeZoom = true
 var scanPath
 
+
 var selectedStyle = 'light'
 
 var updateWorker
