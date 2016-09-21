@@ -43,6 +43,8 @@ var audio = new Audio('static/sounds/ding.mp3')
 var openedGymMembers = []
 var moves = {}
 
+var updateInterval // eslint-disable-line no-unused-vars
+
 //
 // Functions
 //
@@ -362,6 +364,11 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
 
 function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned = null, name = null, members = []) {
   var gymColor = ['0, 0, 0, .4', '74, 138, 202, .6', '240, 68, 58, .6', '254, 217, 40, .6']
+  var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
+  var gymLevel = 1
+  while (gymPoints >= gymPrestige[gymLevel - 1]) {
+    gymLevel++
+  }
 
   // calculate the currently opened member. if member is falsy no member is selected
   var openedMember = null
@@ -375,6 +382,15 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
   }
 
   var memberStr = ''
+
+  if (teamId && members.length > 0 && gymLevel > members.length) {
+    for (var j = 0; j < gymLevel - members.length; j++) {
+      memberStr +=
+        `<span class="gym-member free" title="Free slot">
+        </span>`
+    }
+  }
+
   for (var i = 0; i < members.length; i++) {
     var memberSelected = openedMember && members[i].trainer_name === openedMember.trainer_name
     var selectedClass = memberSelected ? 'selected' : ''
@@ -386,8 +402,6 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         <span class="cp">${members[i].pokemon_cp}</span>
       </span>`
   }
-
-
 
   var memberDetailsStr
   if (openedMember) {
@@ -408,7 +422,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
   } else {
     memberDetailsStr = `
       <div>
-        <img height='78px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
+        <img height='59px' style='padding: 5px;' src='static/forts/${teamName}_large.png'>
       </div>`
   }
 
@@ -444,11 +458,6 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         </center>
       </div>`
   } else {
-    var gymPrestige = [2000, 4000, 8000, 12000, 16000, 20000, 30000, 40000, 50000]
-    var gymLevel = 1
-    while (gymPoints >= gymPrestige[gymLevel - 1]) {
-      gymLevel++
-    }
     str = `
       <div>
         <center>
@@ -1555,7 +1564,7 @@ $(function () {
 
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
-  window.setInterval(updateMap, 5000)
+  updateInterval = window.setInterval(updateMap, 5000)
   window.setInterval(updateGeoLocation, 1000)
 
   createUpdateWorker()

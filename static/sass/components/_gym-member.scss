@@ -3,6 +3,7 @@
   display: inline-block;
   border: 2px solid transparent;
   border-radius: 8px;
+  vertical-align: bottom;
 
   .pokemon-sprite {
     top: 0;
@@ -22,6 +23,13 @@
   &.team-3 .cp {
     background-color: #FED928;
     color: #000;
+  }
+
+  &.free {
+    width: 30px;
+    height: 48px;
+    background-color: lightgray;
+    margin: 2px;
   }
 
   &.selected {
