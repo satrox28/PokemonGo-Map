@@ -386,8 +386,11 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
       </span>`
   }
 
+
+
   var memberDetailsStr
   if (openedMember) {
+    var memberPercent = Math.round((openedMember.iv_defense + openedMember.iv_attack + openedMember.iv_stamina) * 100 / 45)
     var move1 = moves[openedMember.move_1] ? moves[openedMember.move_1].name : openedMember.move_1
     var move2 = moves[openedMember.move_2] ? moves[openedMember.move_2].name : openedMember.move_2
     memberDetailsStr = `
@@ -395,10 +398,7 @@ function gymLabel (teamName, teamId, gymPoints, latitude, longitude, lastScanned
         ${openedMember.pokemon_name} | ${openedMember.trainer_name} (Lvl ${openedMember.trainer_level})
       </div>
       <div>
-        Attack: ${openedMember.iv_attack} | Defense: ${openedMember.iv_defense} | Stamina: ${openedMember.iv_stamina}
-      </div>
-      <div>
-        HP: ${openedMember.pokemon_stamina} | CP: ${openedMember.pokemon_cp}
+        IV: ${memberPercent}% (${openedMember.iv_attack}/${openedMember.iv_defense}/${openedMember.iv_stamina}) | HP: ${openedMember.pokemon_stamina}
       </div>
       <div>
         Moves: ${move1}, ${move2}
