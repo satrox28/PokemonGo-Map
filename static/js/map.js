@@ -1006,8 +1006,12 @@ function processGyms (i, item) {
     }
   }
 
+  var gymHasOpenSpot = function (gymLevel, pokemonInGym) {
+    return gymLevel > item.pokemon.length && item.pokemon.length !== 0
+  }
+
   if (Store.get('showOpenGymsOnly') === 1) {
-    if (gymLevel === item.pokemon.length || item.pokemon.length === 0) {
+    if (!gymHasOpenSpot(gymLevel, item.pokemon.length)) {
       removeGymFromMap(item['gym_id'])
       return true
     }
@@ -1026,7 +1030,7 @@ function processGyms (i, item) {
         break
     }
 
-    if ((!gymLevel === item.pokemon.length && item.pokemon.length === 0) && gymPrestige[gymLevel - 1] > closePrestige + item.gym_points || gymLevel === 10) {
+    if ((!gymHasOpenSpot(gymLevel, item.pokemon.length) && gymPrestige[gymLevel - 1] > closePrestige + item.gym_points) || gymLevel === 10) {
       removeGymFromMap(item['gym_id'])
       return true
     }
