@@ -573,7 +573,6 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 time.sleep(args.scan_delay)
 
         # catch any process exceptions, log them, and continue the thread
-
         except Exception as e:
             status['message'] = 'Exception in search_worker using account {}. Restarting with fresh account. See logs for details.'.format(account['username'])
             time.sleep(args.scan_delay)

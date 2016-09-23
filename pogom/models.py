@@ -588,8 +588,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         'disappear_time': d_t,
     }
     if encounter_result is not None:
-        ecounter_info = encounter_result['responses']['ENCOUNTER']
-        pokemon_info = ecounter_info['wild_pokemon']['pokemon_data']
+        encounter_info = encounter_result['responses']['ENCOUNTER']
+        pokemon_info = encounter_info['wild_pokemon']['pokemon_data']
         attack = pokemon_info.get('individual_attack', 0)
         defense = pokemon_info.get('individual_defense', 0)
         stamina = pokemon_info.get('individual_stamina', 0)
