@@ -587,9 +587,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
         'longitude': p['longitude'],
         'disappear_time': d_t,
     }
-    if encounter_result is not None:
-        encounter_info = encounter_result['responses']['ENCOUNTER']
-        pokemon_info = encounter_info['wild_pokemon']['pokemon_data']
+    if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
+        pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
         attack = pokemon_info.get('individual_attack', 0)
         defense = pokemon_info.get('individual_defense', 0)
         stamina = pokemon_info.get('individual_stamina', 0)
@@ -601,6 +600,8 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
             'move_2': pokemon_info['move_2'],
         })
     else:
+        if encounter_result is not None and 'wild_pokemon' not in encounter_result['responses']['ENCOUNTER']:
+            log.warning("Error encountering {}, status code: {}".format(p['encounter_id'], encounter_result['responses']['ENCOUNTER']['status']))
         pokemons[p['encounter_id']].update({
             'individual_attack': None,
             'individual_defense': None,
