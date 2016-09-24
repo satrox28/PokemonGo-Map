@@ -35,9 +35,10 @@ var storeZoom = true
 var scanPath
 var moves
 
-
 var selectedStyle = 'light'
 
+var updateWorker
+var lastUpdateTime
 
 var gymTypes = ['Uncontested', 'Mystic', 'Valor', 'Instinct']
 var audio = new Audio('static/sounds/ding.mp3')
@@ -768,10 +769,17 @@ function clearSelection () {
 
 function addListeners (marker) {
   marker.addListener('click', function () {
-    marker.infoWindow.open(map, marker)
-    clearSelection()
-    updateLabelDiffTime()
-    marker.persist = true
+    if (!marker.infoWindowIsOpen) {
+      marker.infoWindow.open(map, marker)
+      clearSelection()
+      updateLabelDiffTime()
+      marker.persist = true
+      marker.infoWindowIsOpen = true
+    } else {
+      marker.persist = null
+      marker.infoWindow.close()
+      marker.infoWindowIsOpen = false
+    }
   })
 
   google.maps.event.addListener(marker.infoWindow, 'closeclick', function () {
@@ -1045,8 +1053,9 @@ function updateMap () {
 //    drawScanPath(result.scanned);
     clearStaleMarkers()
     if ($('#stats').hasClass('visible')) {
-      countMarkers()
+      countMarkers(map)
     }
+    lastUpdateTime = Date.now()
   })
 }
 
@@ -1247,6 +1256,62 @@ function i8ln (word) {
   } else {
     // Word doesn't exist in dictionary return it as is
     return word
+  }
+}
+
+function updateGeoLocation () {
+  if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
+    navigator.geolocation.getCurrentPosition(function (position) {
+      var lat = position.coords.latitude
+      var lng = position.coords.longitude
+      var center = new google.maps.LatLng(lat, lng)
+
+      if (Store.get('geoLocate')) {
+        // the search function makes any small movements cause a loop. Need to increase resolution
+        if ((typeof searchMarker !== 'undefined') && (getPointDistance(searchMarker.getPosition(), center) > 40)) {
+          $.post('next_loc?lat=' + lat + '&lon=' + lng).done(function () {
+            map.panTo(center)
+            searchMarker.setPosition(center)
+          })
+        }
+      }
+      if (Store.get('followMyLocation')) {
+        if ((typeof locationMarker !== 'undefined') && (getPointDistance(locationMarker.getPosition(), center) >= 5)) {
+          map.panTo(center)
+          locationMarker.setPosition(center)
+          Store.set('followMyLocationPosition', { lat: lat, lng: lng })
+        }
+      }
+    })
+  }
+}
+
+function createUpdateWorker () {
+  try {
+    if (isMobileDevice() && (window.Worker)) {
+      var updateBlob = new Blob([`onmessage = function(e) {
+        var data = e.data
+        if (data.name === 'backgroundUpdate') {
+          self.setInterval(function () {self.postMessage({name: 'backgroundUpdate'})}, 5000)
+        }
+      }`])
+
+      var updateBlobURL = window.URL.createObjectURL(updateBlob)
+
+      updateWorker = new Worker(updateBlobURL)
+
+      updateWorker.onmessage = function (e) {
+        var data = e.data
+        if (document.hidden && data.name === 'backgroundUpdate' && Date.now() - lastUpdateTime > 2500) {
+          updateMap()
+          updateGeoLocation()
+        }
+      }
+
+      updateWorker.postMessage({name: 'backgroundUpdate'})
+    }
+  } catch (ex) {
+    console.log('Webworker error: ' + ex.message)
   }
 }
 
@@ -1480,7 +1545,7 @@ $(function () {
     $selectRarityNotify.val(Store.get('remember_select_rarity_notify')).trigger('change')
     $textPerfectionNotify.val(Store.get('remember_text_perfection_notify')).trigger('change')
 
-    if (isTouchDevice()) {
+    if (isTouchDevice() && isMobileDevice()) {
       $('.select2-search input').prop('readonly', true)
     }
   })
@@ -1488,32 +1553,9 @@ $(function () {
   // run interval timers to regularly update map and timediffs
   window.setInterval(updateLabelDiffTime, 1000)
   window.setInterval(updateMap, 5000)
-  window.setInterval(function () {
-    if (navigator.geolocation && (Store.get('geoLocate') || Store.get('followMyLocation'))) {
-      navigator.geolocation.getCurrentPosition(function (position) {
-        var lat = position.coords.latitude
-        var lng = position.coords.longitude
-        var center = new google.maps.LatLng(lat, lng)
+  window.setInterval(updateGeoLocation, 1000)
 
-        if (Store.get('geoLocate')) {
-          // the search function makes any small movements cause a loop. Need to increase resolution
-          if ((typeof searchMarker !== 'undefined') && (getPointDistance(searchMarker.getPosition(), center) > 40)) {
-            $.post('next_loc?lat=' + lat + '&lon=' + lng).done(function () {
-              map.panTo(center)
-              searchMarker.setPosition(center)
-            })
-          }
-        }
-        if (Store.get('followMyLocation')) {
-          if ((typeof locationMarker !== 'undefined') && (getPointDistance(locationMarker.getPosition(), center) >= 5)) {
-            map.panTo(center)
-            locationMarker.setPosition(center)
-            Store.set('followMyLocationPosition', { lat: lat, lng: lng })
-          }
-        }
-      })
-    }
-  }, 1000)
+  createUpdateWorker()
 
   // Wipe off/restore map icons when switches are toggled
   function buildSwitchChangeListener (data, dataType, storageKey) {
@@ -1603,4 +1645,24 @@ $(function () {
       heightStyle: 'content'
     })
   }
+
+  // Initialize dataTable in statistics sidebar
+  //   - turn off sorting for the 'icon' column
+  //   - initially sort 'name' column alphabetically
+
+  $('#pokemonList_table').DataTable({
+    paging: false,
+    searching: false,
+    info: false,
+    errMode: 'throw',
+    'language': {
+      'emptyTable': ''
+    },
+    'columns': [
+      { 'orderable': false },
+      null,
+      null,
+      null
+    ]
+  }).order([1, 'asc'])
 })
