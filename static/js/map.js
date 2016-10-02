@@ -1460,13 +1460,12 @@ function showSpawnDetails (id) { // eslint-disable-line no-unused-vars
             move2Name
           ]
         )
-
-        $('#spawnHistory_table').dataTable().show()
-        spawnHistoryTable
+      })
+      $('#spawnHistory_table').dataTable().show()
+      spawnHistoryTable
           .clear()
           .rows.add(spawnHistory)
           .draw()
-      })
     } else {
       spawnHistoryTable
         .clear()
