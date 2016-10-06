@@ -442,6 +442,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     status['message'] = 'Account {} empty more than {} scans; possibly encountering captcha. Switching accounts...'.format(account['username'], args.max_empties)
                     log.warning(status['message'])
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha'})
+                    time.sleep(5); #Give the thread a few seconds to push the message to db
                     break  # exit this loop to get a new account and have the API recreated
 
                 while pause_bit.is_set():
