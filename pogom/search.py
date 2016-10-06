@@ -414,6 +414,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
 
             # only sleep when consecutive_fails reaches max_failures, overall fails for stat purposes
             consecutive_fails = 0
+            consecutive_empties = 0
 
             # Create the API instance this will use
             if args.mock != '':
@@ -435,6 +436,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     status['message'] = 'Account {} failed more than {} scans; possibly bad account. Switching accounts...'.format(account['username'], args.max_failures)
                     log.warning(status['message'])
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
+                    break  # exit this loop to get a new account and have the API recreated
+				
+                if consecutive_empties >= args.max_empties:
+                    status['message'] = 'Account {} empty more than {} scans; possibly encountering captcha. Switching accounts...'.format(account['username'], args.max_empties)
+                    log.warning(status['message'])
+                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha'})
                     break  # exit this loop to get a new account and have the API recreated
 
                 while pause_bit.is_set():
@@ -509,7 +516,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                 try:
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
                     search_items_queue.task_done()
-                    status[('success' if parsed['count'] > 0 else 'noitems')] += 1
+                    if parsed['count'] > 0:
+                        status['success'] += 1;
+                        consecutive_empties = 0;
+                    else:
+                        status['noitems'] += 1;
+                        consecutive_empties += 1;
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
