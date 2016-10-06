@@ -437,12 +437,12 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     log.warning(status['message'])
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
                     break  # exit this loop to get a new account and have the API recreated
-				
+
                 if consecutive_empties >= args.max_empties:
                     status['message'] = 'Account {} empty more than {} scans; possibly encountering captcha. Switching accounts...'.format(account['username'], args.max_empties)
                     log.warning(status['message'])
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha'})
-                    time.sleep(5); #Give the thread a few seconds to push the message to db
+                    time.sleep(5)  # Give the thread a few seconds to push the message to db
                     break  # exit this loop to get a new account and have the API recreated
 
                 while pause_bit.is_set():
@@ -518,11 +518,11 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
                     search_items_queue.task_done()
                     if parsed['count'] > 0:
-                        status['success'] += 1;
-                        consecutive_empties = 0;
+                        status['success'] += 1
+                        consecutive_empties = 0
                     else:
-                        status['noitems'] += 1;
-                        consecutive_empties += 1;
+                        status['noitems'] += 1
+                        consecutive_empties += 1
                     consecutive_fails = 0
                     status['message'] = 'Search at {:6f},{:6f} completed with {} finds'.format(step_location[0], step_location[1], parsed['count'])
                     log.debug(status['message'])
