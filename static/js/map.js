@@ -723,8 +723,7 @@ function setupScannedMarker (item) {
       fontSize: fontSize,
       color: color
     })
-  }
-  else {
+  } else {
     label.setLabel({
       text: ' ',
       fontSize: fontSize
@@ -732,7 +731,6 @@ function setupScannedMarker (item) {
   }
 
   google.maps.event.addListener(map, 'zoom_changed', function () {
-
     zoom = map.getZoom()
 
     if (zoom >= 16) {
@@ -741,8 +739,7 @@ function setupScannedMarker (item) {
         fontSize: fontSize,
         color: color
       })
-    }
-    else {
+    } else {
       label.setLabel({
         text: ' ',
         fontSize: fontSize
@@ -765,7 +762,6 @@ function setupScannedMarker (item) {
 }
 
 function getRandomColor (seed) {
-
   var val = parseInt(seed, 10)
 
   if (seed !== val) { // we don't have an integer.  Let's create a seed from the string
