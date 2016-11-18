@@ -1274,5 +1274,5 @@ def database_migrate(db, old_ver):
 
     if old_ver < 10:
         migrate(
-            migrator.add_column('scannedlocation', 'username', TextField(null=True, default="")),
+            migrator.add_column('scannedlocation', 'username', CharField(max_length=255, null=True)),
         )
