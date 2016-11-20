@@ -534,7 +534,6 @@ function formatSpawnTime (seconds) {
   return ('0' + Math.floor(seconds / 60)).substr(-2) + 'm' + ('0' + (seconds % 60)).substr(-2) + 's'
 }
 function spawnpointLabel (item) {
-
   if (item.dtisknown) {
     var timeinfo = `
       <div>
