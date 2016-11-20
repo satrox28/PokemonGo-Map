@@ -311,7 +311,7 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
-        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id,fn.Max(Pokemon.disappear_time).alias('disappear_time'))
+        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, fn.Max(Pokemon.disappear_time).alias('disappear_time'))
 
         if timestamp > 0:
             # Only want modified spawnpoints
@@ -360,7 +360,7 @@ class Pokemon(BaseModel):
 
         for sp in queryDict:
             key = sp['spawnpoint_id']
-            sp['time']=(sp['disappear_time'].minute*60 + sp['disappear_time'].second)
+            sp['time'] = (sp['disappear_time'].minute * 60 + sp['disappear_time'].second)
             if (sp['disappear_time'] > startdate):
                 sp['dtisknown'] = True
             else:
@@ -377,16 +377,16 @@ class Pokemon(BaseModel):
         n, e, s, w = hex_bounds(center, steps)
 
         query = (Pokemon
-                  .select(Pokemon.latitude.alias('lat'), Pokemon.longitude.alias('lng'), Pokemon.spawnpoint_id
-                          ,fn.Max(Pokemon.disappear_time).alias('disappear_time')
-                          ,(fn.Min(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('minseconds')
-                          ,(fn.Max(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('maxseconds')
-                          ,(fn.Min((Pokemon.last_modified.minute + case(None,((Pokemon.last_modified.minute < args.default_spawn_timespan,60),),0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
+                  .select(Pokemon.latitude.alias('lat'), Pokemon.longitude.alias('lng'), Pokemon.spawnpoint_id,
+                          fn.Max(Pokemon.disappear_time).alias('disappear_time'),
+                          (fn.Min(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('minseconds'),
+                          (fn.Max(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('maxseconds'),
+                          (fn.Min((Pokemon.last_modified.minute + case(None, ((Pokemon.last_modified.minute < args.default_spawn_timespan, 60), ), 0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
                   .where((Pokemon.latitude <= n) &
                          (Pokemon.latitude >= s) &
                          (Pokemon.longitude >= w) &
                          (Pokemon.longitude <= e))
-                  .group_by(Pokemon.spawnpoint_id,Pokemon.latitude,Pokemon.longitude))
+                  .group_by(Pokemon.spawnpoint_id, Pokemon.latitude, Pokemon.longitude))
 
         s = list(query.dicts())
 
@@ -825,7 +825,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
         # For all the wild pokemon we found check if an active pokemon is in the database
         query = (Pokemon
-                 .select(Pokemon.encounter_id, Pokemon.spawnpoint_id,fn.Max(Pokemon.disappear_time).alias('disappear_time'))
+                 .select(Pokemon.encounter_id, Pokemon.spawnpoint_id, fn.Max(Pokemon.disappear_time).alias('disappear_time'))
                  .where(Pokemon.encounter_id << encounter_ids)
                  .group_by(Pokemon.encounter_id, Pokemon.spawnpoint_id)
                  .dicts())
@@ -840,7 +840,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 continue
 
             # Surely there's a better way to do this but I don't know python
-            encountered_pokemon2 = [(t[0],t[1]) for t in encountered_pokemon]
+            encountered_pokemon2 = [(t[0], t[1]) for t in encountered_pokemon]
 
             if ((b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon2) & ((p['time_till_hidden_ms'] >= 3600000) | (p['time_till_hidden_ms'] <= 0)):
                 # If pokemon has been encountered before and we still have an invalid TTH do not process.
