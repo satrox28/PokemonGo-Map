@@ -30,7 +30,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 9
+db_schema_version = 10
 
 # When TTH is invalid, use 1/1/1900 as the disappear time.  Only set disappear time when the TTH is valid.
 unknowntime = datetime(year=1900, month=1, day=1)
@@ -617,6 +617,7 @@ class Gym(BaseModel):
 class ScannedLocation(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
+    username = CharField()
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
 
     class Meta:
@@ -793,7 +794,7 @@ def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
 
 
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e ¯\_(ツ)_/¯
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api, status):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -1032,6 +1033,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     db_update_queue.put((ScannedLocation, {0: {
         'latitude': step_location[0],
         'longitude': step_location[1],
+        'username': status['user'],
     }}))
 
     return {
@@ -1353,4 +1355,9 @@ def database_migrate(db, old_ver):
         migrate(
             migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True)),
             migrator.add_column('pokestop', 'last_updated', DateTimeField(null=True, index=True))
+        )
+
+    if old_ver < 10:
+        migrate(
+            migrator.add_column('scannedlocation', 'username', CharField(max_length=255, null=False, default=" ")),
         )

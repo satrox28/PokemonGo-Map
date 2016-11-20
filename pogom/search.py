@@ -533,7 +533,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
                                     break
 
-                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
+                    parsed = parse_map(args, response_dict, step_location, dbq, whq, api, status)
                     search_items_queue.task_done()
                     if parsed['count'] > 0:
                         status['success'] += 1
