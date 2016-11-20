@@ -816,16 +816,16 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 time.sleep(args.encounter_delay)
                 # Set up encounter request envelope
                 req = api.create_request()
+                encounter_result = req.encounter(encounter_id=p['encounter_id'],
+                                                 spawn_point_id=p['spawn_point_id'],
+                                                 player_latitude=step_location[0],
+                                                 player_longitude=step_location[1])
                 encounter_result = req.check_challenge()
                 encounter_result = req.get_hatched_eggs()
                 encounter_result = req.get_inventory()
                 encounter_result = req.check_awarded_badges()
                 encounter_result = req.download_settings()
                 encounter_result = req.get_buddy_walked()
-                encounter_result = req.encounter(encounter_id=p['encounter_id'],
-                                                 spawn_point_id=p['spawn_point_id'],
-                                                 player_latitude=step_location[0],
-                                                 player_longitude=step_location[1])
                 encounter_result = req.call()
             construct_pokemon_dict(pokemons, p, encounter_result, d_t)
             if args.webhooks:

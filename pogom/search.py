@@ -662,16 +662,16 @@ def map_request(api, position, jitter=False):
         cell_ids = util.get_cell_ids(scan_location[0], scan_location[1])
         timestamps = [0, ] * len(cell_ids)
         req = api.create_request()
+        response = req.get_map_objects(latitude=f2i(scan_location[0]),
+                                       longitude=f2i(scan_location[1]),
+                                       since_timestamp_ms=timestamps,
+                                       cell_id=cell_ids)
         response = req.check_challenge()
         response = req.get_hatched_eggs()
         response = req.get_inventory()
         response = req.check_awarded_badges()
         response = req.download_settings()
         response = req.get_buddy_walked()
-        response = req.get_map_objects(latitude=f2i(scan_location[0]),
-                                       longitude=f2i(scan_location[1]),
-                                       since_timestamp_ms=timestamps,
-                                       cell_id=cell_ids)
         response = req.call()
         return response
 
@@ -684,17 +684,17 @@ def gym_request(api, position, gym):
     try:
         log.debug('Getting details for gym @ %f/%f (%fkm away)', gym['latitude'], gym['longitude'], calc_distance(position, [gym['latitude'], gym['longitude']]))
         req = api.create_request()
+        x = req.get_gym_details(gym_id=gym['gym_id'],
+                                player_latitude=f2i(position[0]),
+                                player_longitude=f2i(position[1]),
+                                gym_latitude=gym['latitude'],
+                                gym_longitude=gym['longitude'])
         x = req.check_challenge()
         x = req.get_hatched_eggs()
         x = req.get_inventory()
         x = req.check_awarded_badges()
         x = req.download_settings()
         x = req.get_buddy_walked()
-        x = req.get_gym_details(gym_id=gym['gym_id'],
-                                player_latitude=f2i(position[0]),
-                                player_longitude=f2i(position[1]),
-                                gym_latitude=gym['latitude'],
-                                gym_longitude=gym['longitude'])
         x = req.call()
         # Print pretty(x).
         return x
