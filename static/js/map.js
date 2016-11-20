@@ -345,7 +345,6 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
 
 function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, dtisknown, scanTime) {
   var disappearDate = new Date(disappearTime)
-  // disappearfix
   var scanDate = new Date(scanTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
@@ -364,13 +363,6 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       </div>
       `
   }
-
-//  var disappearstatus = ''
-//  if (dtisknown) {
-//    var disappearstatus = 'Known disappear time is'
-//  } else {
-//    var disappearstatus = 'Disappear time unknown.  Presumed before'
-//  }
 
   if (dtisknown) {
     var disappearstatus = `
@@ -539,8 +531,6 @@ function pokestopLabel (expireTime, latitude, longitude) {
 }
 
 function formatSpawnTime (seconds) {
-  // the addition and modulo are required here because the db stores when a spawn disappears
-  // the subtraction to get the appearance time will knock seconds under 0 if the spawn happens in the previous hour
   return ('0' + Math.floor(seconds / 60)).substr(-2) + 'm' + ('0' + (seconds % 60)).substr(-2) + 's'
 }
 function spawnpointLabel (item) {
@@ -566,12 +556,6 @@ function spawnpointLabel (item) {
     </div>
     ${timeinfo}`
 
-  if (item.special) {
-    str += `
-      <div>
-        May appear as early as ${formatSpawnTime(item.time - 1800)}
-      </div>`
-  }
   return str
 }
 
@@ -766,7 +750,8 @@ function getColorBySpawnTime (value) {
   } else {
     var diff = (value - seconds)
   }
-
+  // Hardcoded 30 minute timespan for spawns.  Eventually the color changing should either be
+  // deprecated or it should account for different spawntypes.
   var hue = 275 // light purple when spawn is neither about to spawn nor active
   if (diff < 1800) { // green to red over 30 minutes of active spawn
     hue = diff / 15
@@ -1290,8 +1275,6 @@ var updateLabelDiffTime = function () {
     $(element).text(timestring)
   })
 }
-
-// disappearfix
 
 var updateLabelUpTime = function () {
   $('.label-countup').each(function (index, element) {
