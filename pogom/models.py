@@ -36,8 +36,10 @@ db_schema_version = 9
 unknowntime = datetime(year=1900, month=1, day=1)
 timedelt = timedelta(minutes=args.default_spawn_timespan)
 
+
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
+
 
 def init_database(app):
     if args.db_type == 'mysql':
@@ -114,7 +116,7 @@ class Pokemon(BaseModel):
             # If timestamp is known only load modified pokemon in the visible area
             query = (query
                      .where((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000)) &
-                             # (Pokemon.disappear_time > rightnow)) &
+                            # (Pokemon.disappear_time > rightnow)) &
                             ((Pokemon.latitude >= swLat) &
                              (Pokemon.longitude >= swLng) &
                              (Pokemon.latitude <= neLat) &
