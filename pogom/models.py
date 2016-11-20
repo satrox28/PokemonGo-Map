@@ -32,9 +32,8 @@ cache = TTLCache(maxsize=100, ttl=60 * 5)
 
 db_schema_version = 9
 
-#disappearfix
+# When TTH is invalid, use 1/1/1900 as the disappear time.  Only set disappear time when the TTH is valid.
 unknowntime = datetime(year=1900, month=1, day=1)
-# defspawntime is the default presumed length of a spawn.  Probably should be moved to a command line argument.
 timedelt = timedelta(minutes=args.default_spawn_timespan)
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -93,17 +92,20 @@ class Pokemon(BaseModel):
     move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
 
-
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
         rightnow = datetime.utcnow()
+
+        # recenttime is used in queries to compare with last_modified similar to how disappear_time gets compared with rightnow
         recenttime = rightnow - timedelt
+
         query = Pokemon.select()
         if not (swLat and swLng and neLat and neLng):
-            # Not sure what this is -- I think it's used for mobile
+            # Here and in many places below, instead of using only disappear_time in the future we also
+            # use last_modified within the recent default visible timespan if the disappear_time is unknown
             query = (query
                      .where((Pokemon.disappear_time > rightnow) |
                             ((Pokemon.disappear_time == unknowntime) & (Pokemon.last_modified > recenttime)))
@@ -135,7 +137,6 @@ class Pokemon(BaseModel):
                               (Pokemon.longitude <= oNeLng)))
                      .dicts())
         else:
-            # I believe this is only used for the very initial load of the server or browser refresh.
             query = (query
                      .where(((Pokemon.disappear_time > rightnow) |
                              ((Pokemon.disappear_time == unknowntime) & (Pokemon.last_modified > recenttime))) &
@@ -150,8 +151,13 @@ class Pokemon(BaseModel):
 
         pokemons = []
         for p in query:
+            # Eventually we'll have to add logic to manage the various spawntypes.
             if p['disappear_time'] == unknowntime:
+                # when disappear_time equals unknowntime then we want to use last_modified plus
+                # the default visible timespan as the calculated disappear_time
                 p['disappear_time'] = p['last_modified'] + timedelt
+                # dtisknown is a flag that gets passed to the web interface specifying
+                # whether the disappear time given is known or guessed.
                 p['dtisknown'] = False
             else:
                 p['dtisknown'] = True
@@ -301,7 +307,6 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawn_time(cls, disappear_time):
-        #disappearfix
         return (disappear_time + 3600 - args.default_spawn_timespan * 60) % 3600
 
     @classmethod
@@ -342,7 +347,7 @@ class Pokemon(BaseModel):
         queryDict = query.dicts()
         spawnpoints = {}
 
-        # This finds the point in time when the new code began so we aren't just regurgitating bad data.
+        # This finds the point in time when the new code began so we aren't just perpetuating invalid data.
         # This needs to be moved somewhere else to run once at startup and define a global variable.  Or something like that.
         startdatequery = (Pokemon.select((fn.Min(Pokemon.last_modified)).alias('startdate'))
                                 .where(Pokemon.disappear_time == unknowntime)
@@ -396,18 +401,20 @@ class Pokemon(BaseModel):
             if geopy.distance.distance(center, (sp['lat'], sp['lng'])).meters <= step_distance:
                 filtered.append(s[idx])
 
-        # at this point, 'time' is DISAPPEARANCE time, we're going to morph it to APPEARANCE time
+        # We need to figure out the spawn time so we know when to scan.
         for location in filtered:
-            # examples: time    shifted
-            #           0       (   0 + 2700) = 2700 % 3600 = 2700 (0th minute to 45th minute, 15 minutes prior to appearance as time wraps around the hour)
-            #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute)
-            # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
+            # todo: account for different spawntypes
             if (location['disappear_time'] == unknowntime):
+                # if the disappear_time is unknown, then try to figure out the earliest <seconds after the hour> of a contiguous timespan for a spawnpoint
+                # while accounting for wrapping around an hour and directly use that as the spawntime for a spawnpoint.
                 if ((location['minseconds'] < args.default_spawn_timespan * 60) and (location['maxseconds'] > args.default_spawn_timespan * 60)):
+                    # when the earliest scan is within the first timespan of an hour and the latest scan is within the last timespan of
+                    # an hour then we need to use the earliest scan in the final timespan of an hour to wrap around the hour.
                     location['time'] = location['shiftedminseconds']
                 else:
                     location['time'] = location['minseconds']
             else:
+                # if disappear_time is known, then calculate spawntime.
                 location['time'] = cls.get_spawn_time(location['disappear_time'].minute * 60 + location['disappear_time'].second)
 
         return filtered
@@ -832,7 +839,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 skipped += 1
                 continue
 
-            #Surely there's a better way to do this but I don't know python
+            # Surely there's a better way to do this but I don't know python
             encountered_pokemon2 = [(t[0],t[1]) for t in encountered_pokemon]
 
             if ((b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon2) & ((p['time_till_hidden_ms'] >= 3600000) | (p['time_till_hidden_ms'] <= 0)):
@@ -846,7 +853,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                     (p['last_modified_timestamp_ms'] +
                      p['time_till_hidden_ms']) / 1000.0)
             else:
-                # This finds the point in time when the new code began so we aren't just regurgitating bad data.
+                # This finds the point in time when the new code began so we aren't just perpetuating invalid data.
                 # This needs to be moved somewhere else to run once at startup and define a global variable.  Or something like that.
                 startdatequery = (Pokemon.select((fn.Min(Pokemon.last_modified)).alias('startdate'))
                                         .where(Pokemon.disappear_time == unknowntime)
