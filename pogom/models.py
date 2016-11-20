@@ -823,9 +823,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 encounter_result = req.download_settings()
                 encounter_result = req.get_buddy_walked()
                 encounter_result = req.encounter(encounter_id=p['encounter_id'],
-                                       spawn_point_id=p['spawn_point_id'],
-                                       player_latitude=step_location[0],
-                                       player_longitude=step_location[1])
+                                                 spawn_point_id=p['spawn_point_id'],
+                                                 player_latitude=step_location[0],
+                                                 player_longitude=step_location[1])
                 encounter_result = req.call()
             construct_pokemon_dict(pokemons, p, encounter_result, d_t)
             if args.webhooks:
