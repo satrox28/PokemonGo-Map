@@ -114,7 +114,7 @@ class Pokemon(BaseModel):
             # If timestamp is known only load modified pokemon in the visible area
             query = (query
                      .where((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000)) &
-                             #(Pokemon.disappear_time > rightnow)) &
+                             # (Pokemon.disappear_time > rightnow)) &
                             ((Pokemon.latitude >= swLat) &
                              (Pokemon.longitude >= swLng) &
                              (Pokemon.latitude <= neLat) &
@@ -276,7 +276,6 @@ class Pokemon(BaseModel):
             timediff = datetime.utcnow() - timediff
         query = (Pokemon
                  .select(Pokemon.latitude, Pokemon.longitude, Pokemon.pokemon_id, fn.Count(Pokemon.spawnpoint_id).alias('count'), Pokemon.disappear_time)
-                 #disappearfix
                  .where((Pokemon.pokemon_id == pokemon_id) &
                         ((Pokemon.disappear_time > timediff) | ((Pokemon.disappear_time == unknowntime) & (Pokemon.last_modified > timediff))))
                  .group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.pokemon_id, Pokemon.spawnpoint_id)
@@ -350,8 +349,8 @@ class Pokemon(BaseModel):
         # This finds the point in time when the new code began so we aren't just perpetuating invalid data.
         # This needs to be moved somewhere else to run once at startup and define a global variable.  Or something like that.
         startdatequery = (Pokemon.select((fn.Min(Pokemon.last_modified)).alias('startdate'))
-                                .where(Pokemon.disappear_time == unknowntime)
-                                .dicts())
+                          .where(Pokemon.disappear_time == unknowntime)
+                          .dicts())
         if startdatequery.exists():
             for t in startdatequery:
                 startdate = t['startdate']
@@ -377,16 +376,16 @@ class Pokemon(BaseModel):
         n, e, s, w = hex_bounds(center, steps)
 
         query = (Pokemon
-                  .select(Pokemon.latitude.alias('lat'), Pokemon.longitude.alias('lng'), Pokemon.spawnpoint_id,
-                          fn.Max(Pokemon.disappear_time).alias('disappear_time'),
-                          (fn.Min(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('minseconds'),
-                          (fn.Max(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('maxseconds'),
-                          (fn.Min((Pokemon.last_modified.minute + case(None, ((Pokemon.last_modified.minute < args.default_spawn_timespan, 60), ), 0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
-                  .where((Pokemon.latitude <= n) &
-                         (Pokemon.latitude >= s) &
-                         (Pokemon.longitude >= w) &
-                         (Pokemon.longitude <= e))
-                  .group_by(Pokemon.spawnpoint_id, Pokemon.latitude, Pokemon.longitude))
+                 .select(Pokemon.latitude.alias('lat'), Pokemon.longitude.alias('lng'), Pokemon.spawnpoint_id,
+                         fn.Max(Pokemon.disappear_time).alias('disappear_time'),
+                         (fn.Min(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('minseconds'),
+                         (fn.Max(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('maxseconds'),
+                         (fn.Min((Pokemon.last_modified.minute + case(None, ((Pokemon.last_modified.minute < args.default_spawn_timespan, 60), ), 0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
+                 .where((Pokemon.latitude <= n) &
+                        (Pokemon.latitude >= s) &
+                        (Pokemon.longitude >= w) &
+                        (Pokemon.longitude <= e))
+                 .group_by(Pokemon.spawnpoint_id, Pokemon.latitude, Pokemon.longitude))
 
         s = list(query.dicts())
 
@@ -834,7 +833,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
         encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id'], p['disappear_time']) for p in query]
 
         for p in wild_pokemon:
-            if (b64encode(str(p['encounter_id'])), p['spawn_point_id'], datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] +p['time_till_hidden_ms']) / 1000.0)) in encountered_pokemon:
+            if (b64encode(str(p['encounter_id'])), p['spawn_point_id'], datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + p['time_till_hidden_ms']) / 1000.0)) in encountered_pokemon:
                 # If pokemon has been encountered before and we already have a valid TTH recorded do not process.
                 skipped += 1
                 continue
@@ -856,8 +855,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 # This finds the point in time when the new code began so we aren't just perpetuating invalid data.
                 # This needs to be moved somewhere else to run once at startup and define a global variable.  Or something like that.
                 startdatequery = (Pokemon.select((fn.Min(Pokemon.last_modified)).alias('startdate'))
-                                        .where(Pokemon.disappear_time == unknowntime)
-                                        .dicts())
+                                  .where(Pokemon.disappear_time == unknowntime)
+                                  .dicts())
                 if startdatequery.exists():
                     for t in startdatequery:
                         startdate = t['startdate']
