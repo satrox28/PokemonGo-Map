@@ -364,14 +364,15 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       `
   }
 
+  var disappearstatus = ''
   if (dtisknown) {
-    var disappearstatus = `
+    disappearstatus = `
       <div>
         <b>Known</b> disappear time is ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
         <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
       </div>`
   } else {
-    var disappearstatus = `
+    disappearstatus = `
       <div>
         Disappear time <b>unknown</b>.  Presumed before ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
         <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
@@ -534,8 +535,9 @@ function formatSpawnTime (seconds) {
   return ('0' + Math.floor(seconds / 60)).substr(-2) + 'm' + ('0' + (seconds % 60)).substr(-2) + 's'
 }
 function spawnpointLabel (item) {
+  var timeinfo = ''
   if (item.dtisknown) {
-    var timeinfo = `
+    timeinfo = `
       <div>
         Disappears every hour at ${formatSpawnTime(item.time)}
       </div>
@@ -543,7 +545,7 @@ function spawnpointLabel (item) {
         Spawn time unknown.
       </div>`
   } else {
-    var timeinfo = `
+    timeinfo = `
       <div>
         Disappear and spawn times are <b>unknown</b>.
       </div>`
@@ -744,10 +746,11 @@ function getColorBySpawnTime (value) {
   var seconds = now.getMinutes() * 60 + now.getSeconds()
 
   // account for hour roll-over
+  var diff = ''
   if (seconds > value) {
-    var diff = (3600 + value - seconds)
+    diff = (3600 + value - seconds)
   } else {
-    var diff = (value - seconds)
+    diff = (value - seconds)
   }
   // Hardcoded 30 minute timespan for spawns.  Eventually the color changing should either be
   // deprecated or it should account for different spawntypes.
