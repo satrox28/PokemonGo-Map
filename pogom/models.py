@@ -36,8 +36,7 @@ db_schema_version = 9
 #disappearfix
 unknowntime = datetime(year=1900, month=1, day=1)
 # defspawntime is the default presumed length of a spawn.  Probably should be moved to a command line argument.
-defspawntimespan = 30
-timedelt = timedelta(minutes=defspawntimespan)
+timedelt = timedelta(minutes=args.default_spawn_timespan)
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
@@ -236,7 +235,7 @@ class Pokemon(BaseModel):
 
         query = (Pokemon
                  .select(Pokemon.pokemon_id,
-                         (Pokemon.last_modified + defspawntimespan * 60).alias('disappear_time'),
+                         (Pokemon.last_modified + args.default_spawn_timespan * 60).alias('disappear_time'),
                          Pokemon.latitude,
                          Pokemon.longitude,
                          pokemon_count_query.c.count)
@@ -304,7 +303,7 @@ class Pokemon(BaseModel):
     @classmethod
     def get_spawn_time(cls, disappear_time):
         #disappearfix
-        return (disappear_time + 3600 - defspawntimespan * 60) % 3600
+        return (disappear_time + 3600 - args.default_spawn_timespan * 60) % 3600
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
@@ -378,7 +377,7 @@ class Pokemon(BaseModel):
                           ,fn.Max(Pokemon.disappear_time).alias('disappear_time')
                           ,(fn.Min(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('minseconds')
                           ,(fn.Max(Pokemon.last_modified.minute * 60 + Pokemon.last_modified.second)).alias('maxseconds')
-                          ,(fn.Min((Pokemon.last_modified.minute + case(None,((Pokemon.last_modified.minute < defspawntimespan,60),),0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
+                          ,(fn.Min((Pokemon.last_modified.minute + case(None,((Pokemon.last_modified.minute < args.default_spawn_timespan,60),),0)) * 60 + Pokemon.last_modified.second)).alias('shiftedminseconds'))
                   .where((Pokemon.latitude <= n) &
                          (Pokemon.latitude >= s) &
                          (Pokemon.longitude >= w) &
@@ -405,7 +404,7 @@ class Pokemon(BaseModel):
             #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute)
             # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough
             if (location['disappear_time'] == unknowntime):
-                if ((location['minseconds'] < defspawntimespan * 60) and (location['maxseconds'] > defspawntimespan * 60)):
+                if ((location['minseconds'] < args.default_spawn_timespan * 60) and (location['maxseconds'] > args.default_spawn_timespan * 60)):
                     location['time'] = location['shiftedminseconds']
                 else:
                     location['time'] = location['minseconds']
