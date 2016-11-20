@@ -7,7 +7,6 @@ import os
 import json
 import logging
 import shutil
-import platform
 import pprint
 import time
 
@@ -77,6 +76,14 @@ def get_args():
     parser.add_argument('-enc', '--encounter',
                         help='Start an encounter to gather IVs and moves',
                         action='store_true', default=False)
+    parser.add_argument('-cs', '--captcha-solving',
+                        help='Enables captcha solving',
+                        action='store_true', default=False)
+    parser.add_argument('-ck', '--captcha-key',
+                        help='2Captcha API key')
+    parser.add_argument('-cds', '--captcha-dsk',
+                        help='PokemonGo captcha data-sitekey',
+                        default="6LeeTScTAAAAADqvhqVMhPpr_vB9D364Ia-1dSgK")
     parser.add_argument('-ed', '--encounter-delay',
                         help='Time delay between encounter pokemon in scan threads',
                         type=float, default=1)
@@ -189,12 +196,6 @@ def get_args():
                         help='Set the status page password')
     parser.add_argument('-el', '--encrypt-lib', help='Path to encrypt lib to be used instead of the shipped ones')
     parser.add_argument('-odt', '--on-demand_timeout', help='Pause searching while web UI is inactive for this timeout(in seconds)', type=int, default=0)
-    parser.add_argument('-sl', '--speed-limit',
-                        help='Speed limit in kilometers per hour',
-                        type=int, default=0)
-    parser.add_argument('-msld', '--max-speed-limit-delay',
-                        help='Maximum delay in seconds allowed due to speed limit',
-                        type=int, default=0)
     parser.add_argument('-dt', '--default-spawn-timespan',
                         help='Time in minutes to use as the default length of a spawn with an unknown disappear time',
                         type=int, default=30)
@@ -332,12 +333,6 @@ def get_args():
             if num_auths > 1 and num_usernames != num_auths:
                 errors.append('The number of provided auth ({}) must match the username count ({})'.format(num_auths, num_usernames))
 
-        if args.speed_limit < 0:
-            errors.append('Speed limit cannot be less than 0')
-
-        if args.max_speed_limit_delay < 0:
-            errors.append('Maximum delay due to speed limit cannot be less than 0')
-
         if len(errors) > 0:
             parser.print_usage()
             print(sys.argv[0] + ": errors: \n - " + "\n - ".join(errors))
@@ -438,61 +433,6 @@ def get_pokemon_rarity(pokemon_id):
 def get_pokemon_types(pokemon_id):
     pokemon_types = get_pokemon_data(pokemon_id)['types']
     return map(lambda x: {"type": i8ln(x['type']), "color": x['color']}, pokemon_types)
-
-
-def get_encryption_lib_path(args):
-    if args.encrypt_lib is not None:
-        lib_path = args.encrypt_lib
-
-        if not os.path.isfile(lib_path):
-            err = "Could not find manually specified encryption library {}".format(lib_path)
-            log.error(err)
-            raise Exception(err)
-    else:
-        # win32 doesn't mean necessarily 32 bits
-        if sys.platform == "win32" or sys.platform == "cygwin":
-            if platform.architecture()[0] == '64bit':
-                lib_name = "encrypt64bit.dll"
-            else:
-                lib_name = "encrypt32bit.dll"
-
-        elif sys.platform == "darwin":
-            lib_name = "libencrypt-osx-64.so"
-
-        elif os.uname()[4].startswith("arm") and platform.architecture()[0] == '32bit':
-            lib_name = "libencrypt-linux-arm-32.so"
-
-        elif os.uname()[4].startswith("aarch64") and platform.architecture()[0] == '64bit':
-            lib_name = "libencrypt-linux-arm-64.so"
-
-        elif sys.platform.startswith('linux'):
-            if "centos" in platform.platform():
-                if platform.architecture()[0] == '64bit':
-                    lib_name = "libencrypt-centos-x86-64.so"
-                else:
-                    lib_name = "libencrypt-linux-x86-32.so"
-            else:
-                if platform.architecture()[0] == '64bit':
-                    lib_name = "libencrypt-linux-x86-64.so"
-                else:
-                    lib_name = "libencrypt-linux-x86-32.so"
-
-        elif sys.platform.startswith('freebsd'):
-            lib_name = "libencrypt-freebsd-64.so"
-
-        else:
-            err = "Unexpected/unsupported platform '{}'. If you have encrypt lib compiled for your platform, specify its location with '--encrypt-lib' parameter".format(sys.platform)
-            log.error(err)
-            raise Exception(err)
-
-        lib_path = os.path.join(os.path.dirname(__file__), "libencrypt", lib_name)
-
-        if not os.path.isfile(lib_path):
-            err = "Could not find {} encryption library {}".format(sys.platform, lib_path)
-            log.error(err)
-            raise Exception(err)
-
-    return lib_path
 
 
 class Timer():
