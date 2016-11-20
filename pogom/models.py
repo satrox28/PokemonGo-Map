@@ -9,7 +9,7 @@ import time
 import geopy
 from peewee import SqliteDatabase, InsertQuery, \
     IntegerField, CharField, DoubleField, BooleanField, \
-    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, SQL, TextField
+    DateTimeField, fn, DeleteQuery, CompositeKey, FloatField, TextField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError, case
