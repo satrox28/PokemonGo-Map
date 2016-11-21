@@ -26,8 +26,8 @@ import geopy
 import geopy.distance
 import requests
 
-from datetime import datetime
-from threading import Thread
+from datetime import datetime, timedelta
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -35,7 +35,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
 from .fakePogoApi import FakePogoApi
 from .utils import now
 import schedulers
@@ -45,6 +45,10 @@ import terminalsize
 log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
+
+tokenLock = Lock()
+
+token_needed = 0
 
 
 # Apply a location jitter.
@@ -127,7 +131,7 @@ def status_printer(threadStatus, search_items_queue, db_updates_queue, wh_queue,
                     skip_total += threadStatus[item]['skip']
 
             # Print the queue length.
-            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures)))
+            status_text.append('Queues: {} search items, {} db updates, {} webhook.  Total skipped items: {}. Spare accounts available: {}. Accounts on hold: {}. Token needed: {}'.format(search_items_queue.qsize(), db_updates_queue.qsize(), wh_queue.qsize(), skip_total, account_queue.qsize(), len(account_failures), token_needed))
 
             # Print status of overseer.
             status_text.append('{} Overseer: {}'.format(threadStatus['Overseer']['scheduler'], threadStatus['Overseer']['message']))
@@ -437,13 +441,6 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'failures'})
                     break  # Exit this loop to get a new account and have the API recreated.
 
-                if consecutive_empties >= args.max_empties:
-                    status['message'] = 'Account {} empty more than {} scans; possibly encountering captcha. Switching accounts...'.format(account['username'], args.max_empties)
-                    log.warning(status['message'])
-                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'captcha'})
-                    time.sleep(5)  # Give the thread a few seconds to push the message to db
-                    break  # exit this loop to get a new account and have the API recreated
-
                 while pause_bit.is_set():
                     status['message'] = 'Scanning paused'
                     time.sleep(2)
@@ -518,27 +515,45 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if args.captcha_solving:
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
-                            status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
-                            log.warning(status['message'])
-                            captcha_token = token_request(args, status, captcha_url)
-                            if 'ERROR' in captcha_token:
-                                log.warning("Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
-                                account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
-                                break
+                            if args.captcha_key is not None:
+                                status[
+                                    'message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(
+                                    account['username'])
                             else:
-                                status['message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(account['username'])
+                                status[
+                                    'message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(
+                                    account['username'])
+                            log.warning(status['message'])
+                            captcha_token = token_request(args, status, captcha_url, whq)
+
+                            if 'ERROR' in captcha_token:
+                                log.warning(
+                                    "Unable to resolve captcha, please check your 2captcha API key and/or wallet balance")
+                                account_failures.append({'account': account, 'last_fail_time': now(),
+                                                         'reason': 'catpcha failed to verify'})
+                                break
+
+                            else:
+                                status[
+                                    'message'] = 'Retrieved captcha token, attempting to verify challenge for {}'.format(
+                                    account['username'])
                                 log.info(status['message'])
                                 response = api.verify_challenge(token=captcha_token)
+
                                 if 'success' in response['responses']['VERIFY_CHALLENGE']:
-                                    status['message'] = "Account {} successfully uncaptcha'd".format(account['username'])
+                                    status['message'] = "Account {} successfully uncaptcha'd".format(
+                                        account['username'])
                                     log.info(status['message'])
-                                    # Make another request for the same coordinate since the previous one was captcha'd
-                                    response_dict = map_request(api, step_location, args.jitter)
+
                                 else:
-                                    status['message'] = "Account {} failed verifyChallenge, putting away account for now".format(account['username'])
+                                    status[
+                                        'message'] = "Account {} failed verifyChallenge, putting away account for now".format(
+                                        account['username'])
                                     log.info(status['message'])
-                                    account_failures.append({'account': account, 'last_fail_time': now(), 'reason': 'catpcha failed to verify'})
+                                    account_failures.append({'account': account, 'last_fail_time': now(),
+                                                             'reason': 'catpcha failed to verify'})
                                     break
+                                time.sleep(1)
 
                     parsed = parse_map(args, response_dict, step_location, dbq, whq, api)
                     search_items_queue.task_done()
@@ -711,7 +726,30 @@ def gym_request(api, position, gym):
         return False
 
 
-def token_request(args, status, url):
+def token_request(args, status, url, whq):
+
+    global token_needed
+    request_time = datetime.utcnow()
+
+    if args.captcha_key is None:
+        token_needed += 1
+        if args.webhooks:
+            whq.put(('token_needed', {"num": token_needed}))
+        while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
+            tokenLock.acquire()
+            token = Token.get_match(request_time)
+            tokenLock.release()
+            if token is not None:
+                token_needed -= 1
+                if args.webhooks:
+                    whq.put(('token_needed', {"num": token_needed}))
+                return token.token
+            time.sleep(1)
+        token_needed -= 1
+        if args.webhooks:
+            whq.put(('token_needed', {"num": token_needed}))
+        return 'ERROR'
+
     s = requests.Session()
     # Fetch the CAPTCHA_ID from 2captcha.
     try:
