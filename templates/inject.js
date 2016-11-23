@@ -25,7 +25,7 @@ var fnc = function(str){
     }, 1);
 };
 
-captchaResponse=fnc; 
+captchaResponse=fnc;
 setInterval(fnc, 500);
 
 initCaptchaPage();
