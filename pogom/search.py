@@ -517,7 +517,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
                     if args.captcha_solving:
                         captcha_url = response_dict['responses']['CHECK_CHALLENGE']['challenge_url']
                         if len(captcha_url) > 1:
-                             if args.captcha_key is not None:
+                            if args.captcha_key is not None:
                                 status['message'] = 'Account {} is encountering a captcha, starting 2captcha sequence'.format(account['username'])
                             else:
                                 status['message'] = 'Account {} is encountering a captcha, starting manual captcha solving'.format(account['username'])
