@@ -47,8 +47,6 @@ log = logging.getLogger(__name__)
 
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
-tokenLock = Lock()
-
 token_needed = 0
 
 
@@ -814,14 +812,14 @@ def token_request(args, status, url, whq):
         if args.webhooks:
             whq.put(('token_needed', {"num": token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
-            tokenLock.acquire()
-            token = Token.get_match(request_time)
-            tokenLock.release()
-            if token is not None:
+            s = requests.Session()
+            url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain,request_time,args.manual_captcha_solving_password)
+            token = str(s.get(url).text)
+            if token != "":
                 token_needed -= 1
                 if args.webhooks:
                     whq.put(('token_needed', {"num": token_needed}))
-                return token.token
+                return token
             time.sleep(1)
         token_needed -= 1
         if args.webhooks:
