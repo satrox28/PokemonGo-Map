@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime, timedelta
-from threading import Thread, Lock
+from threading import Thread
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -35,7 +35,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
 from .fakePogoApi import FakePogoApi
 from .utils import now
 from .transform import get_new_coords
@@ -813,7 +813,7 @@ def token_request(args, status, url, whq):
             whq.put(('token_needed', {"num": token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             s = requests.Session()
-            url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain,request_time,args.manual_captcha_solving_password)
+            url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
             token = str(s.get(url).text)
             if token != "":
                 token_needed -= 1
