@@ -42,7 +42,6 @@ class Pogom(Flask):
         self.route("/get_token", methods=['GET'])(self.get_token)
         self.route("/bookmarklet", methods=['GET'])(self.get_bookmarklet)
 
-
     def get_bookmarklet(self):
         return render_template('bookmarklet.html')
 
