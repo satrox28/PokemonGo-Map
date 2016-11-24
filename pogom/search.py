@@ -816,12 +816,12 @@ def token_request(args, status, url, whq):
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
             tokenLock.acquire()
             if args.no_server:
-                #multiple instance, use get_token
+                # multiple instances, use get_token in map
                 s = requests.Session()
                 url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
                 token = str(s.get(url).text)
             else:
-                #single instance, get Token directly
+                # single instance, get Token directly
                 token = Token.get_match(request_time)
                 if token is not None:
                     token = token.token
