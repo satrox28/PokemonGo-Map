@@ -27,7 +27,7 @@ import geopy.distance
 import requests
 
 from datetime import datetime, timedelta
-from threading import Thread
+from threading import Thread, Lock
 from queue import Queue, Empty
 
 from pgoapi import PGoApi
@@ -35,7 +35,7 @@ from pgoapi.utilities import f2i
 from pgoapi import utilities as util
 from pgoapi.exceptions import AuthException
 
-from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus
+from .models import parse_map, GymDetails, parse_gyms, MainWorker, WorkerStatus, Token
 from .fakePogoApi import FakePogoApi
 from .utils import now
 from .transform import get_new_coords
@@ -48,6 +48,8 @@ log = logging.getLogger(__name__)
 TIMESTAMP = '\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000'
 
 token_needed = 0
+
+tokenLock = Lock()
 
 
 # Apply a location jitter.
@@ -812,9 +814,20 @@ def token_request(args, status, url, whq):
         if args.webhooks:
             whq.put(('token_needed', {"num": token_needed}))
         while request_time + timedelta(seconds=args.manual_captcha_solving_allowance_time) > datetime.utcnow():
-            s = requests.Session()
-            url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
-            token = str(s.get(url).text)
+            tokenLock.acquire()
+            if args.no_server:
+                #multiple instance, use get_token
+                s = requests.Session()
+                url = "{}/get_token?request_time={}&password={}".format(args.manual_captcha_solving_domain, request_time, args.manual_captcha_solving_password)
+                token = str(s.get(url).text)
+            else:
+                #single instance, get Token directly
+                token = Token.get_match(request_time)
+                if token is not None:
+                    token = token.token
+                else:
+                    token = ""
+            tokenLock.release()
             if token != "":
                 token_needed -= 1
                 if args.webhooks:
