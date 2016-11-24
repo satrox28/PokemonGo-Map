@@ -483,7 +483,6 @@ def _generate_locations(current_location, step_distance, step_limit, worker_coun
 def search_worker_thread(args, account_queue, account_failures, search_items_queue, pause_bit, status, dbq, whq):
 
     log.debug('Search worker thread starting')
-    first_loop = True
 
     # The outer forever loop restarts only when the inner one is intentionally exited - which should only be done when the worker is failing too often, and probably banned.
     # This reinitializes the API and grabs a new account from the queue.
@@ -499,9 +498,7 @@ def search_worker_thread(args, account_queue, account_failures, search_items_que
             status['user'] = account['username']
             log.info(status['message'])
 
-            if first_loop:
-                stagger_thread(args, account)
-                first_loop = False
+            stagger_thread(args, account)
 
             # New lease of life right here.
             status['fail'] = 0
