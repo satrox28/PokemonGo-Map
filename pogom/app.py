@@ -40,6 +40,11 @@ class Pogom(Flask):
         self.route("/inject.js", methods=['GET'])(self.render_inject_js)
         self.route("/add_token", methods=['GET'])(self.add_token)
         self.route("/get_token", methods=['GET'])(self.get_token)
+        self.route("/bookmarklet", methods=['GET'])(self.get_bookmarklet)
+
+
+    def get_bookmarklet(self):
+        return render_template('bookmarklet.html')
 
     def get_token(self):
         request_time = request.args.get('request_time')
