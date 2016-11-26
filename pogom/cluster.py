@@ -1,4 +1,3 @@
-import time
 import random
 
 import clsmath
@@ -100,7 +99,6 @@ def check_cluster(spawnpoint, cluster, radius, time_threshold):
 
 def cluster(spawnpoints, radius, time_threshold):
     clusters = []
-    diameter = 2 * radius
 
     for p in spawnpoints:
         if len(clusters) == 0:
