@@ -40,7 +40,7 @@ class Spawncluster(object):
 
     def __iter__(self):
         for x in self._spawnpoints:
-        yield x
+            yield x
 
     def __contains__(self, item):
         return item in self._spawnpoints
@@ -123,6 +123,7 @@ def test(cluster, radius, time_threshold):
         assert clsmath.distance(p.position, cluster.centroid) <= radius
         assert cluster.min_time <= p.time <= cluster.max_time
 
+
 def main(raw):
     radius = 70
     time_threshold = 240  # 5 minutes is alright to grab a pokemon since most times are 30m+
@@ -138,7 +139,7 @@ def main(raw):
         raise
 
     clusters.sort(key=lambda x: len(x))
-    
+
     for c in clusters:
         row = dict()
         # pick a random id from a clustered spawnpoint
@@ -149,5 +150,5 @@ def main(raw):
         # pick the latest time so earlier spawnpoints have already spawned
         row['time'] = c.max_time
         rows.append(row)
-        
+
     return rows
