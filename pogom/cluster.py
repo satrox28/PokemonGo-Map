@@ -10,7 +10,7 @@ class Spawnpoint(object):
 
         self.position = (float(data['lat']), float(data['lng']))
 
-        self.time = data['disappear_time']
+        self.time = data['time']
 
     def serialize(self):
         obj = dict()
@@ -19,7 +19,7 @@ class Spawnpoint(object):
             obj['spawnpoint_id'] = self.spawnpoint_id
         obj['lat'] = self.position[0]
         obj['lng'] = self.position[1]
-        obj['disappear_time'] = self.time
+        obj['time'] = self.time
 
         return obj
 
@@ -143,7 +143,7 @@ def main(raw):
         row['lat'] = c.centroid[0]
         row['lng'] = c.centroid[1]
         # pick the latest time so earlier spawnpoints have already spawned
-        row['disappear_time'] = c.max_time
+        row['time'] = c.max_time
         rows.append(row)
 
     return rows
