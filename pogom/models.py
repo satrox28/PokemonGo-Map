@@ -371,7 +371,7 @@ class Pokemon(BaseModel):
         return list(spawnpoints.values())
 
     @classmethod
-    def get_spawnpoints_in_hex(cls, center, steps):
+    def get_spawnpoints_in_hex(cls, center, steps, time_offset):
         log.info('Finding spawn points {} steps away'.format(steps))
 
         n, e, s, w = hex_bounds(center, steps)
@@ -412,7 +412,7 @@ class Pokemon(BaseModel):
             #           0       (   0 + 2700) = 2700 % 3600 = 2700 (0th minute to 45th minute, 15 minutes prior to appearance as time wraps around the hour.)
             #           1800    (1800 + 2700) = 4500 % 3600 =  900 (30th minute, moved to arrive at 15th minute.)
             # todo: this DOES NOT ACCOUNT for pokemons that appear sooner and live longer, but you'll _always_ have at least 15 minutes, so it works well enough.
-            location['time'] = cls.get_spawn_time(location['time'])
+            location['time'] = cls.get_spawn_time(location['time']) + time_offset
 
         if args.sscluster:
             filtered = cluster.main(filtered)

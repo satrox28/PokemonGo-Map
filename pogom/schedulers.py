@@ -274,7 +274,7 @@ class SpawnScan(BaseScheduler):
         # No locations yet? Try the database!
         if not self.locations:
             log.debug('Loading spawn points from database')
-            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit)
+            self.locations = Pokemon.get_spawnpoints_in_hex(self.scan_location, self.args.step_limit, self.args.time_offset)
 
         # Well shit...
         # if not self.locations:
