@@ -8,10 +8,7 @@ class Spawnpoint(object):
         # not needed but useful for debugging
         self.spawnpoint_id = data.get('spawnpoint_id') or data.get('sid')
 
-        try:
-            self.position = (float(data['latitude']), float(data['longitude']))
-        except KeyError:
-            self.position = (float(data['lat']), float(data['lng']))
+        self.position = (float(data['lat']), float(data['lng']))
 
         self.time = data['time']
 
@@ -20,8 +17,8 @@ class Spawnpoint(object):
 
         if self.spawnpoint_id is not None:
             obj['spawnpoint_id'] = self.spawnpoint_id
-        obj['latitude'] = self.position[0]
-        obj['longitude'] = self.position[1]
+        obj['lat'] = self.position[0]
+        obj['lng'] = self.position[1]
         obj['time'] = self.time
 
         return obj
@@ -124,9 +121,8 @@ def test(cluster, radius, time_threshold):
 
 def main(raw):
     radius = 70
-    time_threshold = 240  # 5 minutes is alright to grab a pokemon since most times are 30m+
-    rows = raw  # grab the passed spawn list
-    spawnpoints = [Spawnpoint(x) for x in rows]  # separate them
+    time_threshold = 180  # 4 minutes is alright to grab a pokemon since most times are 30m+
+    spawnpoints = [Spawnpoint(x) for x in raw]  # separate them
     clusters = cluster(spawnpoints, radius, time_threshold)
 
     try:
@@ -138,6 +134,7 @@ def main(raw):
 
     clusters.sort(key=lambda x: len(x))
 
+    rows = []  # Clear rows to prevent multiplying spawn points.
     for c in clusters:
         row = dict()
         # pick a random id from a clustered spawnpoint
